@@ -1,0 +1,44 @@
+body {
+  background: black;
+  color: white;
+  font-family: sans-serif;
+}
+
+#list {
+  list-style: none;
+  margin-left: 0;
+  padding-left: 0;
+}
+
+#list li {
+  margin-left: 2ch;
+  margin-bottom: 1rem;
+}
+
+#list li::before {
+  display: inline;
+  font-weight: bold;
+  margin-left: -2ch;
+  content: attr(data-author) " está "
+}
+
+h3 {
+  margin-top: 10px;
+  margin-bottom: 0;
+  line-height: 1;
+}
+
+#avatarsjunta {
+  margin-top: 5px;
+  padding-left: 0;
+}
+
+#avatarsjunta li {
+  display: inline;
+  margin-right: 1ch;
+}
+
+#avatarsjunta img {
+  width: 32px;
+  border-radius: 100%;
+}
