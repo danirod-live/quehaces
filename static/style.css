@@ -4,6 +4,18 @@ body {
   font-family: sans-serif;
 }
 
+#help {
+  font-size: 1.2em;
+  position: sticky;
+  top: 0;
+  background: black;
+  width: 100%;
+  padding-top: 1rem;
+  padding-bottom: 10px;
+  border-bottom: 1px solid white;
+  text-align: center;
+}
+
 #list {
   list-style: none;
   margin-left: 0;
@@ -41,4 +53,11 @@ h3 {
 #avatarsjunta img {
   width: 32px;
   border-radius: 100%;
+}
+
+#neterror {
+  text-align: center;
+  background: #500;
+  color: white;
+  padding: 10px;
 }

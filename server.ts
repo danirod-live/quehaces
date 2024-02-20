@@ -3,6 +3,17 @@ import tmi from "tmi.js"
 import express from "express"
 import type { Request, Response } from "express"
 import cors from "cors"
+import EventEmitter from "events";
+
+var process = require('process')
+process.on('SIGINT', () => {
+  console.info("Interrupted")
+  process.exit(0)
+});
+
+/* Bump this number, it will cause any connected browsers to reload after app restart. */
+const protocol = 3;
+const react = new EventEmitter();
 
 const state = {
   statuses: new Map(),
@@ -22,18 +33,23 @@ function loadState() {
   }
 }
 
+function getState() {
+  return JSON.stringify({
+    statuses: [...state.statuses],
+    juntas: [...state.juntas],
+    avatars: [...state.avatars],
+  });
+}
+
 function dumpState() {
   const serialized = JSON.stringify({
     statuses: [...state.statuses],
     juntas: [...state.juntas],
     avatars: [...state.avatars],
   });
-  console.log("Serializing state", serialized);
   writeFile("redis.json", serialized, (err) => {
     if (err)
       console.error(err);
-    else
-      console.log("Serialized state into redis.json");
   });
 }
 
@@ -41,10 +57,8 @@ let scheduler: number | null = null;
 
 function scheduleDumpState() {
   if (scheduler) {
-    console.log("Invalidating old schedule");
     clearTimeout(scheduler);
   }
-  console.log("Scheduled state serialization");
   scheduler = setTimeout(() => dumpState(), 1000) as unknown as number;
 }
 
@@ -89,58 +103,40 @@ const actions: { [k: string]: (name: string, msg: string) => void } = {
       state.statuses.clear();
       state.juntas.clear();
       state.avatars.clear();
-      scheduleDumpState();
+      react.emit('update');
     }
   },
   '!estoy': (name, msg) => {
     if (!msg) {
       state.statuses.delete(name)
-      scheduleDumpState();
+      react.emit('update')
     } else {
       state.statuses.delete(name)
       state.statuses.set(name, msg)
-      scheduleDumpState();
+      react.emit('update')
     }
   },
   '!yanotoy': (name, _) => {
     state.statuses.delete(name);
-    scheduleDumpState();
+    react.emit('update')
   },
   '!junta': (name, _) => {
     state.juntas.add(name);
-    scheduleDumpState();
+    react.emit('update')
   },
   '!finjunta': (name, _) => {
     state.juntas.delete(name);
-    scheduleDumpState();
-  },
-  '!task': (name, msg) => {
-    if (!msg) {
-      state.statuses.delete(name)
-      scheduleDumpState();
-    } else {
-      state.statuses.delete(name)
-      state.statuses.set(name, msg)
-      scheduleDumpState();
-    }
-  },
-  '!endtask': (name, _) => {
-    state.statuses.delete(name);
-    scheduleDumpState();
-  },
-  '!meeting': (name, _) => {
-    state.juntas.add(name);
-    scheduleDumpState();
-  },
-  '!endmeeting': (name, _) => {
-    state.juntas.delete(name);
-    scheduleDumpState();
-  },
+    react.emit('update')
+  }
 }
 
 loadState();
 scheduleDumpState();
-setInterval(() => scheduleDumpState(), 60000);
+
+react.on('update', () => console.log('Server state changed to', getState()));
+react.on('update', () => scheduleDumpState());
+setInterval(() => react.emit('update'), 30000);
+
 if (!process.env.CHANNEL_NAME) {
   throw new Error("Falta CHANNEL_NAME");
 }
@@ -174,6 +170,34 @@ app.get("/api/state", (req: Request, res: Response) => {
     juntas: [...state.juntas],
   }
   return res.json(response)
+});
+app.get("/api/state/lock", (req: Request, res: Response) => {
+  let counter = 0;
+
+  /* Send header. */
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+  });
+
+  console.log('Client connection locked');
+  const broadcast = () => {
+    res.write('event: state\n');
+    res.write(`data: ${getState()}\n`);
+    res.write(`id: ${counter++}\n\n`);
+
+    res.write('event: protover\n');
+    res.write(`data: ${protocol}\n`);
+    res.write(`id: ${counter++}\n\n`);
+  };
+  broadcast();
+  react.on("update", broadcast);
+  req.on('close', () => {
+    console.log('Client connection unlocked');
+    react.off("update", broadcast)
+    res.end('OK');
+  });
 });
 app.get("/api/avatars/:id", async (req: Request, res: Response) => {
   const avatar = await fetchAvatar(req.params.id);

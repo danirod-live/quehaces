@@ -26,8 +26,6 @@ function renderData(data) {
         getItem(j).junta = true
     })
 
-    console.log(items)
-
     const listItems = items.filter((i) => !i.junta).map((i) => {
         const node = document.createElement("li");
         node.setAttribute("data-author", i.name)
@@ -59,17 +57,41 @@ function renderData(data) {
     window.scrollTo(0, document.body.scrollHeight);
 }
 
-function requestLoop() {
-    fetchData()
-        .then((data) => {
-            document.querySelector("#neterror").setAttribute("hidden", "hidden");
-            renderData(data)
-            setTimeout(() => requestLoop(), 1000)
-        })
-        .catch((err) => {
-            document.querySelector("#neterror").removeAttribute("hidden");
-            setTimeout(() => requestLoop(), 1000)
-        })
+fetchData().then((data) => renderData(data));
+
+let protover = null;
+
+async function connect() {
+    const subscription = new EventSource("/api/state/lock");
+    subscription.addEventListener('open', () => {
+        console.log('lock established');
+    });
+    subscription.addEventListener('state', ({ data }) => {
+        document.getElementById('neterror').hidden = true;
+        const state = JSON.parse(data);
+        const response = {
+            statuses: Object.fromEntries(state.statuses),
+            juntas: [...state.juntas],
+        }
+        console.log('state', response);
+        renderData(response);
+    });
+    subscription.addEventListener('protover', (data) => {
+        console.log(data);
+        const version = JSON.parse(data.data);
+        if (protover == null) {
+            console.log("protocol version set to", version);
+            protover = version;
+        } else if (version > protover) {
+            console.log("reloading page because protocol version is now", version)
+            window.location.reload();
+        }
+    })
+    subscription.addEventListener('error', (e) => {
+        document.getElementById('neterror').hidden = false;
+        subscription.close();
+        setTimeout(() => connect(), 3000);
+    });
 }
 
-requestLoop()
+connect();
