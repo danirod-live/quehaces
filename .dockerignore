@@ -1,0 +1,9 @@
+.git
+.gitignore
+.dockerignore
+Dockerfile
+node_modules
+redis.json
+server.js
+.env
+run.cmd
