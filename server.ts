@@ -12,7 +12,7 @@ process.on('SIGINT', () => {
 });
 
 /* Bump this number, it will cause any connected browsers to reload after app restart. */
-const protocol = 3;
+const protocol = 5;
 const react = new EventEmitter();
 
 const state = {
@@ -106,6 +106,26 @@ const actions: { [k: string]: (name: string, msg: string) => void } = {
       react.emit('update');
     }
   },
+  '!está': (name, msg) => {
+    if (!msg) {
+      state.statuses.delete(name)
+      react.emit('update')
+    } else {
+      state.statuses.delete(name)
+      state.statuses.set(name, msg)
+      react.emit('update')
+    }
+  },
+  '!esta': (name, msg) => {
+    if (!msg) {
+      state.statuses.delete(name)
+      react.emit('update')
+    } else {
+      state.statuses.delete(name)
+      state.statuses.set(name, msg)
+      react.emit('update')
+    }
+  },
   '!estoy': (name, msg) => {
     if (!msg) {
       state.statuses.delete(name)
@@ -115,6 +135,14 @@ const actions: { [k: string]: (name: string, msg: string) => void } = {
       state.statuses.set(name, msg)
       react.emit('update')
     }
+  },
+  '!acabe': (name, _) => {
+    state.statuses.delete(name);
+    react.emit('update')
+  },
+  '!acabé': (name, _) => {
+    state.statuses.delete(name);
+    react.emit('update')
   },
   '!yanotoy': (name, _) => {
     state.statuses.delete(name);
