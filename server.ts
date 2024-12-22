@@ -97,16 +97,16 @@ async function fetchAvatar(user: string) {
 }
 
 
-const actions: { [k: string]: (name: string, msg: string) => void } = {
-  '!agendareset': (name, _) => {
-    if (name === process.env.CHANNEL_NAME) {
+const actions: { [k: string]: (name: string, msg: string, mod: boolean) => void } = {
+  '!agendareset': (name, _, mod) => {
+    if (name === process.env.CHANNEL_NAME || mod) {
       state.statuses.clear();
       state.juntas.clear();
       state.avatars.clear();
       react.emit('update');
     }
   },
-  '!está': (name, msg) => {
+  '!está': (name, msg, _) => {
     if (!msg) {
       state.statuses.delete(name)
       react.emit('update')
@@ -116,7 +116,7 @@ const actions: { [k: string]: (name: string, msg: string) => void } = {
       react.emit('update')
     }
   },
-  '!esta': (name, msg) => {
+  '!esta': (name, msg, _) => {
     if (!msg) {
       state.statuses.delete(name)
       react.emit('update')
@@ -126,7 +126,7 @@ const actions: { [k: string]: (name: string, msg: string) => void } = {
       react.emit('update')
     }
   },
-  '!estoy': (name, msg) => {
+  '!estoy': (name, msg, _) => {
     if (!msg) {
       state.statuses.delete(name)
       react.emit('update')
@@ -136,26 +136,33 @@ const actions: { [k: string]: (name: string, msg: string) => void } = {
       react.emit('update')
     }
   },
-  '!acabe': (name, _) => {
+  '!acabe': (name, _, _m) => {
     state.statuses.delete(name);
     react.emit('update')
   },
-  '!acabé': (name, _) => {
+  '!acabé': (name, _, _m) => {
     state.statuses.delete(name);
     react.emit('update')
   },
-  '!yanotoy': (name, _) => {
+  '!yanotoy': (name, _, _m) => {
     state.statuses.delete(name);
     react.emit('update')
   },
-  '!junta': (name, _) => {
+  '!junta': (name, _, _m) => {
     state.juntas.add(name);
     react.emit('update')
   },
-  '!finjunta': (name, _) => {
+  '!finjunta': (name, _, _m) => {
     state.juntas.delete(name);
     react.emit('update')
-  }
+  },
+  '!quitar': (_, target, mod) => {
+    if (mod) {
+      state.statuses.delete(target);
+      state.juntas.delete(target);
+      react.emit('update');
+    }
+  },
 }
 
 loadState();
@@ -179,10 +186,11 @@ client.on('message', (_c, tags, message, _s) => {
   const args = message.trim().split(" ")
   const cmd = args.shift()?.toLowerCase();
   const msg = args.join(" ")
+  const mod = tags?.mod || false;
 
   if (!cmd)
     return
-  actions[cmd]?.(username, msg)
+  actions[cmd]?.(username, msg, mod)
 })
 client.connect()
 
