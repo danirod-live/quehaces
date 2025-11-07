@@ -14,7 +14,6 @@ process.on("SIGINT", () => {
 /* Bump this number, it will cause any connected browsers to reload after app restart. */
 const protocol = 5;
 const react = new EventEmitter();
-/* solo permite 1 tarea por usuario, no varias */
 const state = {
   statuses: new Map<string, string[]>(),
   juntas: new Set(),
@@ -103,6 +102,7 @@ const actions: {
 } = {
   "!agendareset": (name, _, mod) => {
     if (name === process.env.CHANNEL_NAME || mod) {
+      console.log(process.env.CHANNEL_NAME);
       state.statuses.clear();
       state.juntas.clear();
       state.avatars.clear();
@@ -116,11 +116,6 @@ const actions: {
       if (!state.statuses.has(name)) state.statuses.set(name, []);
       const tasks = state.statuses.get(name)!;
       tasks.push(msg);
-
-      /*
-      state.statuses.delete(name);
-      state.statuses.set(name, msg);
-      react.emit("update");*/
     }
     react.emit("update");
   },
@@ -131,11 +126,6 @@ const actions: {
       if (!state.statuses.has(name)) state.statuses.set(name, []);
       const tasks = state.statuses.get(name)!;
       tasks.push(msg);
-
-      /*
-      state.statuses.delete(name);
-      state.statuses.set(name, msg);
-      react.emit("update");*/
     }
     react.emit("update");
   },
@@ -147,11 +137,6 @@ const actions: {
       if (!state.statuses.has(name)) state.statuses.set(name, []);
       const tasks = state.statuses.get(name)!;
       tasks.push(msg);
-
-      /*
-      state.statuses.delete(name);
-      state.statuses.set(name, msg);
-      react.emit("update");*/
     }
     react.emit("update");
   },
@@ -238,12 +223,41 @@ react.on("update", () => scheduleDumpState());
 //  fuerza un ping cada 30 segundos, ¿sincronizacion de navegador?
 setInterval(() => react.emit("update"), 30000);
 
+console.log("configuraciones de .env:");
+console.log(
+  `CHANNEL_NAME: ${
+    process.env.CHANNEL_NAME ||
+    "No esta definido mi rey si quieres me conecto a Dios"
+  }`
+);
 if (!process.env.CHANNEL_NAME) {
-  throw new Error("Falta CHANNEL_NAME");
+  throw new Error("Configura porfa tu CHANNEL_NAME el .env ");
 }
+console.log(
+  `CLIENT_ID: ${
+    process.env.CLIENT_ID ? "Esta definido" : "No Existe, revisa tu .env "
+  }`
+);
+console.log(
+  `CLIENT_SECRET: ${
+    process.env.CLIENT_SECRET
+      ? "esta definido y es: que te crees que te dare asi de facil el secreto, es entre yo y twitch"
+      : "no existe pero dicen que se puede configurar en un tal .env"
+  }`
+);
+
 const client = new tmi.Client({
+  connection: {
+    reconnect: true,
+    secure: true,
+  },
   channels: [process.env.CHANNEL_NAME],
 });
+
+client.on("disconnected", (reason) => {
+  console.log(`Mira por estar molestando la vida te sacaron por: ${reason}`);
+});
+
 client.on("message", (_c, tags, message, _s) => {
   const username = tags.username;
   if (!username || !message || !message.startsWith("!")) return;
@@ -256,8 +270,14 @@ client.on("message", (_c, tags, message, _s) => {
   if (!cmd) return;
   actions[cmd]?.(username, msg, mod);
 });
-client.connect();
 
+console.log(` intentando conectarme al canal de ${process.env.CHANNEL_NAME}`);
+
+client.connect().catch((error) => {
+  throw new Error(
+    `mira hubo un percanser con twitch y nos estamos peleando y me dijo:${error}`
+  );
+});
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -338,4 +358,5 @@ app.delete("/api/junta/:id", (req: Request, res: Response) => {
 });
 app.listen(7654);
 //el mejor console.log de danirod_
+
 console.log("tamo ready");
