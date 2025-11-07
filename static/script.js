@@ -8,44 +8,37 @@ async function fetchData() {
 
 function classifyStatus(message) {
   const msg = (message || "").trim().toLowerCase();
-  if (!msg) return { cls: "task-idle", icon: "•" };
+  if (!msg) {
+    return { cls: "task-idle", icon: "•" };
+  }
   if (
     msg.startsWith("acab") ||
     msg.startsWith("done") ||
     msg.startsWith("final")
-  )
+  ) {
     return { cls: "task-done", icon: "✅" };
+  }
   if (
     msg.startsWith("est") ||
     msg.startsWith("hac") ||
     msg.startsWith("tra") ||
     msg.startsWith("work")
-  )
+  ) {
     return { cls: "task-active", icon: "⏳" };
+  }
   return { cls: "task-idle", icon: "•" };
 }
 
 function parseMultipleTasksByUser(statuses) {
-  // error para todo list
   const parsed = {};
 
   Object.entries(statuses).forEach(([name, tasks]) => {
     if (!Array.isArray(tasks)) return;
     parsed[name] = [...tasks];
-
-    /*   const tasks = (raw || "")
-      .split("\n")
-      .map((msg) => msg.trim())
-      .filter(Boolean);
-
-    if (!parsed[name]) parsed[name] = [];
-
-    parsed[name].push(...tasks);*/
   });
 
   return parsed;
 }
-// reanderizado de informacion
 function renderData(data) {
   const list = document.querySelector("#list");
   list.innerHTML = "";
