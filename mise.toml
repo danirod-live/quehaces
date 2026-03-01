@@ -1,0 +1,15 @@
+[tools]
+node = "24"
+prettier = "latest"
+
+[env]
+_.file = ".env"
+
+[tasks.dev]
+run = "npx ts-node server"
+
+[tasks.build]
+run = "npx tsc"
+
+[tasks.start]
+run = "node server"

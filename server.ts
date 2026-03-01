@@ -73,9 +73,12 @@ async function assertToken(): Promise<void> {
     });
     const json = await response.json();
     token = json.access_token;
-    setTimeout(() => {
-      token = null;
-    }, 59 * 60 * 1000);
+    setTimeout(
+      () => {
+        token = null;
+      },
+      59 * 60 * 1000,
+    );
   }
 }
 
@@ -89,7 +92,7 @@ async function fetchAvatar(user: string) {
           Authorization: "Bearer " + token,
           "Client-Id": process.env.CLIENT_ID as string,
         },
-      }
+      },
     );
     const body = await response.json();
     state.avatars.set(user, body.data[0].profile_image_url);
@@ -228,7 +231,7 @@ console.log(
   `CHANNEL_NAME: ${
     process.env.CHANNEL_NAME ||
     "No esta definido mi rey si quieres me conecto a Dios"
-  }`
+  }`,
 );
 if (!process.env.CHANNEL_NAME) {
   throw new Error("Configura porfa tu CHANNEL_NAME el .env ");
@@ -236,14 +239,14 @@ if (!process.env.CHANNEL_NAME) {
 console.log(
   `CLIENT_ID: ${
     process.env.CLIENT_ID ? "Esta definido" : "No Existe, revisa tu .env "
-  }`
+  }`,
 );
 console.log(
   `CLIENT_SECRET: ${
     process.env.CLIENT_SECRET
       ? "esta definido y es: que te crees que te dare asi de facil el secreto, es entre yo y twitch"
       : "no existe pero dicen que se puede configurar en un tal .env"
-  }`
+  }`,
 );
 
 const client = new tmi.Client({
@@ -275,7 +278,7 @@ console.log(` intentando conectarme al canal de ${process.env.CHANNEL_NAME}`);
 
 client.connect().catch((error) => {
   throw new Error(
-    `mira hubo un percanser con twitch y nos estamos peleando y me dijo:${error}`
+    `mira hubo un percanser con twitch y nos estamos peleando y me dijo:${error}`,
   );
 });
 const app = express();
