@@ -13,3 +13,6 @@ run = "npx tsc"
 
 [tasks.start]
 run = "node server"
+
+[tasks.fmt]
+run = "prettier -w ."
