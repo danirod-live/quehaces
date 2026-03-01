@@ -1,62 +1,93 @@
+// solo escucha la informacion de server.ts
+
 async function fetchData() {
   const response = await fetch("/api/state");
   const body = await response.json();
   return body;
 }
 
+function classifyStatus(message) {
+  const msg = (message || "").trim().toLowerCase();
+  if (!msg) {
+    return { cls: "task-idle", icon: "•" };
+  }
+  if (
+    msg.startsWith("acab") ||
+    msg.startsWith("done") ||
+    msg.startsWith("final")
+  ) {
+    return { cls: "task-done", icon: "✅" };
+  }
+  if (
+    msg.startsWith("est") ||
+    msg.startsWith("hac") ||
+    msg.startsWith("tra") ||
+    msg.startsWith("work")
+  ) {
+    return { cls: "task-active", icon: "⏳" };
+  }
+  return { cls: "task-idle", icon: "•" };
+}
+
+function parseMultipleTasksByUser(statuses) {
+  const parsed = {};
+
+  Object.entries(statuses).forEach(([name, tasks]) => {
+    if (!Array.isArray(tasks)) return;
+    parsed[name] = [...tasks];
+  });
+
+  return parsed;
+}
 function renderData(data) {
-  // { name, message, junta }
-  const items = [];
-  const getItem = function (name) {
-    const x = items.find((i) => i.name === name);
-    if (x) {
-      return x;
-    }
-    const newItem = { name };
-    items.push(newItem);
-    return newItem;
-  };
-
-  Object.entries(data.statuses).forEach((st) => {
-    const [name, message] = st;
-    const key = getItem(name);
-    key.message = message;
-  });
-  data.juntas.forEach((j) => {
-    getItem(j).junta = true;
-  });
-
-  const listItems = items
-    .filter((i) => !i.junta)
-    .map((i) => {
-      const node = document.createElement("li");
-      node.setAttribute("data-author", i.name);
-      if (i.message) node.innerText = i.message;
-      if (i.junta) {
-        node.classList.add("junta");
-        node.innerText = "en una junta";
-      }
-      return node;
-    });
-
   const list = document.querySelector("#list");
   list.innerHTML = "";
-  listItems.forEach((l) => list.appendChild(l));
+
+  const userTasks = parseMultipleTasksByUser(data.statuses);
+  console.log({ userTasks });
+
+  Object.entries(userTasks).forEach(([name, tasks]) => {
+    tasks.forEach((task, index) => {
+      const { cls, icon } = classifyStatus(task);
+
+      const li = document.createElement("li");
+      li.className = `task ${cls}`;
+      li.dataset.author = name;
+
+      const iconSpan = document.createElement("span");
+      iconSpan.className = "task-icon";
+      iconSpan.textContent = icon;
+
+      const msgSpanItem = document.createElement("span");
+      msgSpanItem.className = "task-item";
+      msgSpanItem.textContent = `[${index + 1}] `;
+
+      const msgSpan = document.createElement("span");
+      msgSpan.className = "task-msg";
+      msgSpan.textContent = `${task}`;
+
+      const userSpan = document.createElement("span");
+      userSpan.className = "task-user";
+      userSpan.textContent = name;
+
+      li.append(iconSpan, msgSpanItem, msgSpan, userSpan);
+      list.appendChild(li);
+    });
+  });
 
   const juntas = document.querySelector("#junta");
   const avatares = document.querySelector("#avatarsjunta");
   avatares.innerHTML = "";
   juntas.setAttribute("hidden", "hidden");
-  items
-    .filter((i) => i.junta)
-    .forEach((i) => {
-      juntas.removeAttribute("hidden");
-      const img = document.createElement("img");
-      img.src = `/api/avatars/${i.name}`;
-      const li = document.createElement("li");
-      li.appendChild(img);
-      avatares.appendChild(li);
-    });
+
+  data.juntas.forEach((name) => {
+    juntas.removeAttribute("hidden");
+    const img = document.createElement("img");
+    img.src = `/api/avatars/${name}`;
+    const li = document.createElement("li");
+    li.appendChild(img);
+    avatares.appendChild(li);
+  });
 
   window.scrollTo(0, document.body.scrollHeight);
 }
@@ -67,10 +98,13 @@ let protover = null;
 
 async function connect() {
   const subscription = new EventSource("/api/state/lock");
+
   subscription.addEventListener("open", () => {
     console.log("lock established");
   });
+
   subscription.addEventListener("state", ({ data }) => {
+    console.log({ data });
     document.getElementById("neterror").hidden = true;
     const state = JSON.parse(data);
     const response = {
@@ -80,8 +114,8 @@ async function connect() {
     console.log("state", response);
     renderData(response);
   });
+
   subscription.addEventListener("protover", (data) => {
-    console.log(data);
     const version = JSON.parse(data.data);
     if (protover == null) {
       console.log("protocol version set to", version);
@@ -91,6 +125,7 @@ async function connect() {
       window.location.reload();
     }
   });
+
   subscription.addEventListener("error", (e) => {
     document.getElementById("neterror").hidden = false;
     subscription.close();

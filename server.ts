@@ -14,9 +14,8 @@ process.on("SIGINT", () => {
 /* Bump this number, it will cause any connected browsers to reload after app restart. */
 const protocol = 5;
 const react = new EventEmitter();
-
 const state = {
-  statuses: new Map(),
+  statuses: new Map<string, string[]>(),
   juntas: new Set(),
   avatars: new Map(),
 };
@@ -106,6 +105,7 @@ const actions: {
 } = {
   "!agendareset": (name, _, mod) => {
     if (name === process.env.CHANNEL_NAME || mod) {
+      console.log(process.env.CHANNEL_NAME);
       state.statuses.clear();
       state.juntas.clear();
       state.avatars.clear();
@@ -115,43 +115,89 @@ const actions: {
   "!está": (name, msg, _) => {
     if (!msg) {
       state.statuses.delete(name);
-      react.emit("update");
     } else {
-      state.statuses.delete(name);
-      state.statuses.set(name, msg);
-      react.emit("update");
+      if (!state.statuses.has(name)) state.statuses.set(name, []);
+      const tasks = state.statuses.get(name)!;
+      tasks.push(msg);
     }
+    react.emit("update");
   },
   "!esta": (name, msg, _) => {
     if (!msg) {
       state.statuses.delete(name);
-      react.emit("update");
     } else {
-      state.statuses.delete(name);
-      state.statuses.set(name, msg);
-      react.emit("update");
+      if (!state.statuses.has(name)) state.statuses.set(name, []);
+      const tasks = state.statuses.get(name)!;
+      tasks.push(msg);
     }
+    react.emit("update");
   },
   "!estoy": (name, msg, _) => {
     if (!msg) {
       state.statuses.delete(name);
       react.emit("update");
     } else {
-      state.statuses.delete(name);
-      state.statuses.set(name, msg);
-      react.emit("update");
+      if (!state.statuses.has(name)) state.statuses.set(name, []);
+      const tasks = state.statuses.get(name)!;
+      tasks.push(msg);
     }
-  },
-  "!acabe": (name, _, _m) => {
-    state.statuses.delete(name);
     react.emit("update");
   },
-  "!acabé": (name, _, _m) => {
-    state.statuses.delete(name);
+  "!acabe": (name, msg, _m) => {
+    const msgNumber = parseInt(msg);
+    const tasks = state.statuses.get(name);
+
+    if (!tasks || tasks.length === 0) return;
+
+    if (!isNaN(msgNumber) && msgNumber > 0 && msgNumber <= tasks.length) {
+      tasks.splice(msgNumber - 1, 1);
+      if (tasks.length === 0) {
+        state.statuses.delete(name);
+      } else {
+        state.statuses.set(name, tasks);
+      }
+    } else {
+      state.statuses.delete(name);
+    }
+
     react.emit("update");
   },
-  "!yanotoy": (name, _, _m) => {
-    state.statuses.delete(name);
+  "!acabé": (name, msg, _m) => {
+    const msgNumber = parseInt(msg);
+    const tasks = state.statuses.get(name);
+
+    if (!tasks || tasks.length === 0) return;
+
+    if (!isNaN(msgNumber) && msgNumber > 0 && msgNumber <= tasks.length) {
+      tasks.splice(msgNumber - 1, 1);
+      if (tasks.length === 0) {
+        state.statuses.delete(name);
+      } else {
+        state.statuses.set(name, tasks);
+      }
+    } else {
+      state.statuses.delete(name);
+    }
+
+    react.emit("update");
+  },
+  "!yanotoy": (name, msg, _m) => {
+    const msgNumber = parseInt(msg);
+    const tasks = state.statuses.get(name);
+
+    if (!tasks || tasks.length === 0) return;
+
+    if (!isNaN(msgNumber) && msgNumber > 0 && msgNumber <= tasks.length) {
+      tasks.splice(msgNumber - 1, 1);
+      if (tasks.length === 0) {
+        state.statuses.delete(name);
+      } else {
+        state.statuses.set(name, tasks);
+      }
+    } else {
+      state.statuses.delete(name);
+    }
+
     react.emit("update");
   },
   "!junta": (name, _, _m) => {
@@ -173,17 +219,48 @@ const actions: {
 
 loadState();
 scheduleDumpState();
-
+//**sse ?**
 react.on("update", () => console.log("Server state changed to", getState()));
 react.on("update", () => scheduleDumpState());
+
+//  fuerza un ping cada 30 segundos, ¿sincronizacion de navegador?
 setInterval(() => react.emit("update"), 30000);
 
+console.log("configuraciones de .env:");
+console.log(
+  `CHANNEL_NAME: ${
+    process.env.CHANNEL_NAME ||
+    "No esta definido mi rey si quieres me conecto a Dios"
+  }`,
+);
 if (!process.env.CHANNEL_NAME) {
-  throw new Error("Falta CHANNEL_NAME");
+  throw new Error("Configura porfa tu CHANNEL_NAME el .env ");
 }
+console.log(
+  `CLIENT_ID: ${
+    process.env.CLIENT_ID ? "Esta definido" : "No Existe, revisa tu .env "
+  }`,
+);
+console.log(
+  `CLIENT_SECRET: ${
+    process.env.CLIENT_SECRET
+      ? "esta definido y es: que te crees que te dare asi de facil el secreto, es entre yo y twitch"
+      : "no existe pero dicen que se puede configurar en un tal .env"
+  }`,
+);
+
 const client = new tmi.Client({
+  connection: {
+    reconnect: true,
+    secure: true,
+  },
   channels: [process.env.CHANNEL_NAME],
 });
+
+client.on("disconnected", (reason) => {
+  console.log(`Mira por estar molestando la vida te sacaron por: ${reason}`);
+});
+
 client.on("message", (_c, tags, message, _s) => {
   const username = tags.username;
   if (!username || !message || !message.startsWith("!")) return;
@@ -196,8 +273,14 @@ client.on("message", (_c, tags, message, _s) => {
   if (!cmd) return;
   actions[cmd]?.(username, msg, mod);
 });
-client.connect();
 
+console.log(` intentando conectarme al canal de ${process.env.CHANNEL_NAME}`);
+
+client.connect().catch((error) => {
+  throw new Error(
+    `mira hubo un percanser con twitch y nos estamos peleando y me dijo:${error}`,
+  );
+});
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -246,7 +329,7 @@ app.get("/api/avatars/:id", async (req: Request, res: Response) => {
 
 // Manage tasks over HTTP.
 app.put<{ task: string }>("/api/task/:id", (req: Request, res: Response) => {
-  // TODO: very naif
+  // TODO: very naif XD
   scheduleDumpState();
   const { task } = req.body;
   state.statuses.set(req.params.id, task);
@@ -277,5 +360,6 @@ app.delete("/api/junta/:id", (req: Request, res: Response) => {
   }
 });
 app.listen(7654);
+//el mejor console.log de danirod_
 
 console.log("tamo ready");

@@ -2,3 +2,4 @@ redis.json
 .env
 server.js
 node_modules
+run.sh

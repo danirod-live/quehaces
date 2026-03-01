@@ -1,63 +1,146 @@
 body {
-  background: black;
-  color: white;
-  font-family: sans-serif;
+  background: rgb(31, 41, 55);
+  color: #f1f1f1;
+  font-family: "Segoe UI", sans-serif;
+  margin: 0;
+  padding: 0 1rem;
 }
 
 #help {
   font-size: 1.2em;
   position: sticky;
   top: 0;
-  background: black;
+  background: #374151;
+  border-radius: 8px;
   width: 100%;
-  padding-top: 1rem;
-  padding-bottom: 10px;
-  border-bottom: 1px solid white;
+  padding: 1rem 0 10px;
+  border-bottom: 1px solid #444;
   text-align: center;
+  color: #f0f0f0;
 }
 
 #list {
   list-style: none;
-  margin-left: 0;
-  padding-left: 0;
+  margin: 1rem auto;
+  padding: 0;
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-#list li {
-  margin-left: 2ch;
-  margin-bottom: 1rem;
+.task {
+  display: flex;
+  align-items: center;
+  gap: 1ch;
+  padding: 8px 12px;
+  background: #374151;
+  border-left: 5px solid gray;
+  border-radius: 8px;
+  font-size: 1.05em;
+  line-height: 1.3;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s ease;
 }
 
-#list li::before {
-  display: inline;
-  font-weight: bold;
-  margin-left: -2ch;
-  content: attr(data-author) " está ";
+.task-idle {
+  border-left-color: #aaa;
+  opacity: 0.6;
 }
 
-h3 {
-  margin-top: 10px;
-  margin-bottom: 0;
-  line-height: 1;
+.task-active {
+  border-left-color: #00ff88;
+  opacity: 1;
+}
+
+.task-done {
+  border-left-color: #4fc3f7;
+  opacity: 0.85;
+  text-decoration: line-through;
+}
+
+.task-deleted {
+  opacity: 0;
+  transform: scale(0.95);
+  pointer-events: none;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.task-icon {
+  flex: 0 0 auto;
+  font-size: 1.2em;
+}
+
+.task-item {
+  color: #bac3d3;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-msg {
+  color: white;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-user {
+  flex: 0 0 auto;
+  font-size: 0.9em;
+  color: #bac3d3;
+  opacity: 0.85;
+  margin-left: auto;
+}
+
+.juntas {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: #fff20010;
+  border-radius: 6px;
+  border: 1px solid #fff20050;
+  max-width: 800px;
+  margin-inline: auto;
+}
+
+.juntas h3 {
+  font-size: 1em;
+  margin: 0 0 8px;
+  color: #fff200;
 }
 
 #avatarsjunta {
-  margin-top: 5px;
-  padding-left: 0;
+  margin: 0;
+  padding: 0;
 }
 
 #avatarsjunta li {
-  display: inline;
-  margin-right: 1ch;
+  display: inline-block;
+  margin-right: 8px;
 }
 
 #avatarsjunta img {
   width: 32px;
-  border-radius: 100%;
+  height: 32px;
+  border-radius: 50%;
+  vertical-align: middle;
+  border: 2px solid #fff200;
 }
 
 #neterror {
   text-align: center;
-  background: #500;
+  background: #8b0000;
   color: white;
-  padding: 10px;
+  padding: 12px;
+  margin-top: 1rem;
+  border-radius: 4px;
+  font-weight: bold;
 }
