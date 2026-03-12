@@ -64,12 +64,13 @@ let token: string | null = null;
 
 async function assertToken(): Promise<void> {
   if (!token) {
-    const response = await fetch("https://id.twitch.tv/oauth2/token", {
+    const params = `client_id=${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&grant_type=client_credentials`
+    const response = await fetch(`https://id.twitch.tv/oauth2/token?${params}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: `client_id=${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&grant_type=client_credentials`,
+      body: ``,
     });
     const json = await response.json();
     token = json.access_token;
